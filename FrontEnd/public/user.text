@@ -1,0 +1,220 @@
+I had a contract with Mr. X regarding sale of cattle. But during the formation of the
+ contract, a term in the contract that states that one of the contractors should commit
+  suicide if the party fails to perform the obligations under the contract. Afterwards, 
+  Mr. X was declared bankrupt and he unalived himself. So, what will be the fate of the 
+  contract? and how is the legality of the object of the contract viewed under Ethiopian 
+  contract law
+  
+const mongoose = require("mongoose");
+
+const lawyerSchema = new mongoose.Schema({
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  phone: { type: String, required: true },
+  password: { type: String, required: true },
+  confirmPassword: { type: String, required: true },
+  profilePicture: { type: String },
+  gender: { type: String, required: true },
+  dob: { type: Date, required: true },
+  country: { type: String, default: "Ethiopia" },
+  region: { type: String },
+  city: { type: String },
+  streetAddress: { type: String },
+  postalCode: { type: String },
+  userType: { type: String, default: "Lawyer" },
+  licenseNumber: { type: String, required: true },
+  barCertificate: { type: String },
+  yearsOfExperience: { type: Number, required: true },
+  specialization: { type: [String], required: true },
+  courtRepresentation: { type: String },
+  languagesSpoken: { type: [String] },
+  lawDegree: { type: String },
+  universityName: { type: String },
+  graduationYear: { type: Number },
+  additionalCertifications: { type: String },
+  consultationFee: { type: Number },
+  availability: { type: String },
+  preferredMode: { type: [String] },
+  caseCapacity: { type: Number },
+}, { timestamps: true });
+
+module.exports = mongoose.model("Lawyer", lawyerSchema);
+
+
+const Lawyer = require("../models/lawyerModel");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+const lawyerSignup = async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      password,
+      confirmPassword,
+      profilePicture,
+      gender,
+      dob,
+      country,
+      region,
+      city,
+      streetAddress,
+      postalCode,
+      licenseNumber,
+      barCertificate,
+      yearsOfExperience,
+      specialization,
+      courtRepresentation,
+      languagesSpoken,
+      lawDegree,
+      universityName,
+      graduationYear,
+      additionalCertifications,
+      consultationFee,
+      availability,
+      preferredMode,
+      caseCapacity
+    } = req.body;
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: "Passwords do not match" });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newLawyer = new Lawyer({
+      firstName,
+      lastName,
+      email,
+      phone,
+      password: hashedPassword,
+      profilePicture,
+      gender,
+      dob,
+      country,
+      region,
+      city,
+      streetAddress,
+      postalCode,
+      licenseNumber,
+      barCertificate,
+      yearsOfExperience,
+      specialization,
+      courtRepresentation,
+      languagesSpoken,
+      lawDegree,
+      universityName,
+      graduationYear,
+      additionalCertifications,
+      consultationFee,
+      availability,
+      preferredMode,
+      caseCapacity
+    });
+
+    await newLawyer.save();
+    res.status(201).json({ message: "Lawyer registered successfully", lawyer: newLawyer });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { lawyerSignup };
+
+
+ **1. Dashboard Overview**
+   - **Welcome Section**: A personalized greeting for the user with an overview of their recent activity.
+   - **Quick Actions**:
+     - Search for legal articles or advice.
+     - Book a lawyer consultation.
+     - Upload a legal query or document for advice.
+
+---
+
+### **2. Legal Advice**
+   - **Search Legal Articles**:
+     - Access Ethiopian legal articles based on:
+       - **Civil Cases** (e.g., Family Law, Contract Law).
+       - **Criminal Matters** (e.g., Crimes against property, Crimes against life).
+     - View articles by type and subclass.
+   - **AI Legal Advice**:
+     - Input legal scenarios or questions.
+     - Receive advice powered by **Google Gemini AI** based on Ethiopian laws.
+
+---
+
+### **3. Lawyer Finder**
+   - **Find Lawyers by Expertise**:
+     - Search for lawyers specializing in specific areas of law (e.g., Family Law, Property Law).
+   - **Lawyer Profiles**:
+     - View profiles, experience, and availability.
+   - **Book Consultation**:
+     - Schedule a consultation with a lawyer.
+     - Payment integration for booking (e.g., PayPal, Stripe, or local Ethiopian payment options).
+
+---
+
+### **4. Consultations**
+   - **Scheduled Appointments**:
+     - View upcoming, ongoing, and past consultations.
+   - **Consultation History**:
+     - View consultation details and transcripts.
+   - **Payment Status**:
+     - Track payment for booked consultations.
+
+---
+
+### **5. Messages**
+   - **Chat with Lawyers**:
+     - Send and receive messages from lawyers.
+     - Share files and legal documents (PDFs, images, etc.).
+   - **Notification System**:
+     - Notifications for new messages or responses.
+
+---
+
+### **6. Profile Management**
+   - **User Details**:
+     - Manage personal information (name, email, contact, etc.).
+   - **Upload Profile Picture**:
+     - Allow the user to update their profile image.
+   - **Legal History**:
+     - Track previously viewed legal articles or used services.
+
+---
+
+### **7. Payments and Invoices**
+   - **Payment History**:
+     - View all transactions for consultations or services.
+   - **Invoice Downloads**:
+     - Generate and download invoices for paid consultations.
+
+---
+
+### **8. Feedback and Support**
+   - **Submit Feedback**:
+     - Provide feedback on lawyers or the system.
+   - **Help Center**:
+     - Access FAQs and guides for using the system.
+
+---
+
+### **Optional Features** (for Future Development):
+   - **Document Upload & Storage**:
+     - Allow users to store legal documents securely for consultations.
+   - **E-Signatures**:
+     - Enable digital signing of contracts or agreements.
+   - **Case Tracking**:
+     - Provide updates on ongoing legal cases (if linked to lawyers or courts).
+
+---
+
+These features make the **User Dashboard** comprehensive and user-friendly, addressing the main use cases for your **Legal Adviser and Lawyer Finder System**.
+
+Does this align with your vision for FETH AI? Let me know if you’d like me to refine or expand on specific areas!

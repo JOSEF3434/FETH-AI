@@ -1,0 +1,237 @@
+Got it! Here’s the **complete backend code** with:  
+
+✅ **New fields**: `states: false`, `approved: false`  
+✅ **Routes**: Approve, reject (soft delete), activate/deactivate, get unapproved, approved, and active lawyers  
+✅ **Testable with Postman**  
+
+---
+
+### **📌 Updated Backend Code**
+#### **1️⃣ `lawyerModel.js` (Updated Schema)**
+```javascript
+const mongoose = require("mongoose");
+
+const lawyerSchema = new mongoose.Schema({
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  phone: { type: String, required: true },
+  password: { type: String, required: true },
+  profilePicture: { type: String },
+  gender: { type: String, required: true },
+  dob: { type: Date, required: true },
+  country: { type: String, default: "Ethiopia" },
+  region: { type: String },
+  city: { type: String },
+  streetAddress: { type: String },
+  postalCode: { type: String },
+  userType: { type: String, default: "Lawyer" },
+  licenseNumber: { type: String, required: true },
+  barCertificate: { type: String },
+  yearsOfExperience: { type: Number, required: true },
+  specialization: { type: [String], required: true },
+  courtRepresentation: { type: String },
+  languagesSpoken: { type: [String] },
+  lawDegree: { type: String },
+  universityName: { type: String },
+  graduationYear: { type: Number },
+  additionalCertifications: { type: String },
+  consultationFee: { type: Number },
+  availability: { type: String },
+  preferredMode: { type: [String] },
+  caseCapacity: { type: Number },
+  states: { type: Boolean, default: false }, // Inactive by default
+  approved: { type: Boolean, default: false }, // Not approved by default
+}, { timestamps: true });
+
+module.exports = mongoose.model("Lawyer", lawyerSchema);
+```
+
+---
+
+#### **2️⃣ `lawyerController.js` (New APIs)**
+```javascript
+const Lawyer = require("../models/lawyerModel");
+const bcrypt = require("bcryptjs");
+
+// Lawyer Signup
+const lawyerSignup = async (req, res) => {
+  try {
+    const { password, ...lawyerData } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newLawyer = new Lawyer({
+      ...lawyerData,
+      password: hashedPassword,
+    });
+
+    await newLawyer.save();
+    res.status(201).json({ message: "Lawyer registered successfully", lawyer: newLawyer });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get all unapproved lawyers (states: false, approved: false)
+const getUnapprovedLawyers = async (req, res) => {
+  try {
+    const lawyers = await Lawyer.find({ states: false, approved: false });
+    res.status(200).json(lawyers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Approve a lawyer
+const approveLawyer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const lawyer = await Lawyer.findByIdAndUpdate(id, { approved: true }, { new: true });
+    res.status(200).json(lawyer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Soft delete lawyer (reject)
+const rejectLawyer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Lawyer.findByIdAndUpdate(id, { approved: false, states: false });
+    res.status(200).json({ message: "Lawyer rejected (soft deleted)" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Toggle activation status (states)
+const toggleLawyerState = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const lawyer = await Lawyer.findById(id);
+    if (!lawyer) return res.status(404).json({ error: "Lawyer not found" });
+
+    lawyer.states = !lawyer.states;
+    await lawyer.save();
+    res.status(200).json(lawyer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get all approved lawyers (approved: true)
+const getApprovedLawyers = async (req, res) => {
+  try {
+    const lawyers = await Lawyer.find({ approved: true });
+    res.status(200).json(lawyers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get all active & approved lawyers (states: true, approved: true)
+const getActiveApprovedLawyers = async (req, res) => {
+  try {
+    const lawyers = await Lawyer.find({ states: true, approved: true });
+    res.status(200).json(lawyers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get single lawyer details
+const getLawyerDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const lawyer = await Lawyer.findById(id);
+    if (!lawyer) return res.status(404).json({ error: "Lawyer not found" });
+
+    res.status(200).json(lawyer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { 
+  lawyerSignup, 
+  getUnapprovedLawyers, 
+  approveLawyer, 
+  rejectLawyer, 
+  toggleLawyerState, 
+  getApprovedLawyers, 
+  getActiveApprovedLawyers, 
+  getLawyerDetails 
+};
+```
+
+---
+
+#### **3️⃣ `lawyerRoutes.js` (New Routes)**
+```javascript
+const express = require("express");
+const {
+  lawyerSignup,
+  getUnapprovedLawyers,
+  approveLawyer,
+  rejectLawyer,
+  toggleLawyerState,
+  getApprovedLawyers,
+  getActiveApprovedLawyers,
+  getLawyerDetails,
+} = require("../controllers/lawyerController");
+
+const router = express.Router();
+
+// Lawyer Signup Route
+router.post("/register", lawyerSignup);
+
+// Retrieve unapproved lawyers
+router.get("/unapproved", getUnapprovedLawyers);
+
+// Approve lawyer
+router.put("/approve/:id", approveLawyer);
+
+// Reject lawyer (soft delete)
+router.put("/reject/:id", rejectLawyer);
+
+// Toggle lawyer activation state
+router.put("/toggle-state/:id", toggleLawyerState);
+
+// Retrieve approved lawyers
+router.get("/approved", getApprovedLawyers);
+
+// Retrieve active and approved lawyers
+router.get("/active-approved", getActiveApprovedLawyers);
+
+// Retrieve single lawyer details
+router.get("/:id", getLawyerDetails);
+
+module.exports = router;
+```
+
+---
+
+### **✅ How to Test in Postman**
+#### **1️⃣ Start Your Server**
+```sh
+node index.js  # or npm start
+```
+#### **2️⃣ Test Endpoints in Postman**
+| **Action**          | **Method** | **URL**                                       | **Body / Params** |
+|---------------------|-----------|----------------------------------------------|----------------|
+| Register Lawyer    | `POST`    | `http://localhost:4000/api/lawyers/register` | `{ all lawyer fields }` |
+| Get Unapproved Lawyers | `GET` | `http://localhost:4000/api/lawyers/unapproved` | None |
+| Approve Lawyer | `PUT` | `http://localhost:4000/api/lawyers/approve/:id` | `{ id: lawyerId }` |
+| Reject Lawyer | `PUT` | `http://localhost:4000/api/lawyers/reject/:id` | `{ id: lawyerId }` |
+| Toggle Activation | `PUT` | `http://localhost:4000/api/lawyers/toggle-state/:id` | `{ id: lawyerId }` |
+| Get Approved Lawyers | `GET` | `http://localhost:4000/api/lawyers/approved` | None |
+| Get Active & Approved Lawyers | `GET` | `http://localhost:4000/api/lawyers/active-approved` | None |
+| Get Lawyer Details | `GET` | `http://localhost:4000/api/lawyers/:id` | `{ id: lawyerId }` |
+
+---
+
+### **🚀 Next Steps**
+1. **Test all endpoints in Postman** and confirm the responses.
+2. **Once confirmed**, I will move on to the **frontend JSX components**.
+
+Let me know if you get any errors in Postman! 🚀
